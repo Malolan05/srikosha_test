@@ -1,18 +1,25 @@
-import { NextResponse } from 'next/server'
-import fs from 'fs'
+import { promises as fs } from 'fs'
 import path from 'path'
+import { NextResponse } from 'next/server'
+import type { Scripture } from '@/lib/data'
 
 export async function GET() {
-  // Path to your data directory
-  const dir = path.join(process.cwd(), 'data', 'scriptures')
-  // Get all .json files in /data/scriptures
-  const files = fs.readdirSync(dir).filter(f => f.endsWith('.json'))
-  const allTexts = []
-  for (const file of files) {
-    const data = JSON.parse(fs.readFileSync(path.join(dir, file), 'utf8'))
-    if (Array.isArray(data.texts)) {
-      allTexts.push(...data.texts)
-    }
+  try {
+    const scripturePath = path.join(process.cwd(), 'data', 'scriptures')
+    const files = await fs.readdir(scripturePath)
+    const scriptureFiles = files.filter(file => file.endsWith('.json'))
+
+    const scriptures = await Promise.all(
+      scriptureFiles.map(async file => {
+        const filePath = path.join(scripturePath, file)
+        const content = await fs.readFile(filePath, 'utf8')
+        return JSON.parse(content) as Scripture
+      })
+    )
+
+    return NextResponse.json(scriptures)
+  } catch (error) {
+    console.error('Error loading scriptures:', error)
+    return new NextResponse('Error loading scriptures', { status: 500 })
   }
-  return NextResponse.json(allTexts)
-}
+} 
