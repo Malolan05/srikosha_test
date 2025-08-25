@@ -90,6 +90,15 @@ export default function SearchPage() {
     };
   }, [searchQuery]);
 
+  // Sync input value with URL param if changed outside (e.g. via header search)
+  useEffect(() => {
+    const paramQuery = (searchParams.get("q") ?? "").trim();
+    if (paramQuery !== searchQuery) {
+      setSearchQuery(paramQuery);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
   // Update search query and URL on submit
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
