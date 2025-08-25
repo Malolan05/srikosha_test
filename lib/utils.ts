@@ -20,22 +20,50 @@ import natvachandrikapramukhacapetika from '@/data/scriptures/natvacandrika-pram
 import rahasyatrayasararthasangraha from '@/data/scriptures/rahasyatrayasararthasangraha.json'
 import rahasyatrayasara from '@/data/scriptures/rahasyatrayasara.json'
 import mimamsaparibasha from '@/data/scriptures/mimamsa-paribasha.json'
+import shatadushani from '@/data/scriptures/shatadushani.json'
+import agamapramanyam from "@/data/scriptures/agama-pramanyam.json"
+import vishvaksenasamhita from "@/data/scriptures/sri-vishvaksena-samhita.json"
+import vishnusamhita from "@/data/scriptures/vishnu-samhita.json"
+import paushkarasamhita from "@/data/scriptures/paushkara-samhita.json"
+import lakshmitantram from "@/data/scriptures/lakshmi-tantram.json"
+import aniruddhasamhita from "@/data/scriptures/aniruddha-samhita.json"
+import paramapurushasamhita from "@/data/scriptures/paramapurusha-samhita.json"
+import sriprashnasamhita from "@/data/scriptures/sriprashna-samhita.json"
+import tattvamuktakalapam from "@/data/scriptures/tattvamuktakalapam.json"
+import upanishadone from "@/data/scriptures/upanishad-one.json"
+import kathopanishad from "@/data/scriptures/katha-upanishad.json"
+import chandogyopanishad from "@/data/scriptures/chandogya-upanishad.json"
+import taittiriyopanishad from "@/data/scriptures/taittiriya-upanishad.json"
 
 // Create a map of all scriptures
 const scripturesData: Scripture[] = [
+  agamapramanyam,
   sriParameshvaraSamhita,
-  gitarthasangraha,
+  paushkarasamhita,
+  lakshmitantram,
+  sriprashnasamhita,
+  aniruddhasamhita,
+  paramapurushasamhita,
+  vishnusamhita,
+  vishvaksenasamhita,
   brahmaSutraAdhyayaOne,
   brahmaSutraAdhyayaTwo,
   brahmaSutraAdhyayaThree,
   brahmaSutraAdhyayaFour,
-  purushakaramimamsa,
+  upanishadone,
+  kathopanishad,
+  chandogyopanishad,
+  taittiriyopanishad,
+  tattvamuktakalapam,
+  gitarthasangraha,
   stotraratna,
   vedarthasangraha,
   natvachandrikapramukhacapetika,
-  rahasyatrayasararthasangraha,
   rahasyatrayasara,
-  mimamsaparibasha
+  rahasyatrayasararthasangraha,
+  purushakaramimamsa,
+  mimamsaparibasha,
+  shatadushani
 ]
 
 export function getScriptType(text: string): 'devanagari' | 'tamil' | 'latin' | 'mixed' {
