@@ -1,43 +1,68 @@
-"use client"
-
-import { useSearchParams, useRouter } from "next/navigation";
-import { useState, useEffect, useRef } from "react";
+import fs from "fs";
+import path from "path";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
 
-// Dummy search function - replace with API call or static JSON import for production!
-async function searchScriptures(query: string) {
-  if (!query) return [];
-  // Example: Replace this with a fetch to your API or load data from a static file.
-  // This example returns mock data.
-  const mockResults = [
-    {
-      scriptureName: "Bhagavad Gita",
-      sectionTitle: "Chapter 2",
-      verseNumber: 47,
-      slug: "bhagavad-gita",
-      type: "verse",
-      text: "karmaṇy-evādhikāras te mā phaleṣhu kadāchana",
-      author: null,
-    },
-    {
-      scriptureName: "Ramanuja Commentary",
-      sectionTitle: "Chapter 2",
-      verseNumber: 47,
-      slug: "bhagavad-gita",
-      type: "commentary",
-      text: "You have a right to perform your prescribed duties...",
-      author: "Ramanuja",
-    },
-  ];
-  // To simulate search, filter by query (case-insensitive)
-  const q = query.toLowerCase();
-  return mockResults.filter(
-    res =>
-      res.text.toLowerCase().includes(q) ||
-      (res.author && res.author.toLowerCase().includes(q)) ||
-      (res.scriptureName && res.scriptureName.toLowerCase().includes(q))
-  );
+// Utility to read all JSON files in data/scriptures/
+function getScriptureFiles() {
+  const dir = path.join(process.cwd(), "data", "scriptures");
+  const files: string[] = [];
+  function walk(current: string) {
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      if (entry.isDirectory()) walk(path.join(current, entry.name));
+      else if (entry.name.endsWith(".json")) files.push(path.join(current, entry.name));
+    }
+  }
+  walk(dir);
+  return files;
+}
+
+function searchInVerse(
+  verse: any,
+  query: string,
+  scriptureSlug: string,
+  sectionNumber: number,
+  verseIdx: number
+) {
+  let results: any[] = [];
+  const textFields = [
+    verse.original_text,
+    verse.iast_text,
+    verse.transliteration,
+    verse.translation,
+  ].filter(Boolean);
+  for (const field of textFields) {
+    if (field && field.toLowerCase().includes(query)) {
+      results.push({
+        type: "verse",
+        text: field,
+        scriptureSlug,
+        sectionNumber,
+        verseNumber: verse.verse_number,
+      });
+      break;
+    }
+  }
+  if (verse.commentaries) {
+    for (const comm of verse.commentaries) {
+      if (
+        (comm.commentary && comm.commentary.toLowerCase().includes(query)) ||
+        (comm.author && comm.author.toLowerCase().includes(query))
+      ) {
+        results.push({
+          type: "commentary",
+          text: comm.commentary,
+          author: comm.author,
+          scriptureSlug,
+          sectionNumber,
+          verseNumber: verse.verse_number,
+        });
+      }
+    }
+  }
+  return results;
 }
 
 function highlight(text: string, query: string) {
@@ -54,23 +79,25 @@ function highlight(text: string, query: string) {
   );
 }
 
-export default function SearchPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-  const initialQuery = (searchParams.get("q") ?? "").trim();
+export default function SearchPageWrapper({ searchParams }: { searchParams: { q?: string } }) {
+  // This wrapper is for nextjs server/client compatibility
+  return <ClientSearchPage initialQuery={searchParams.q ?? ""} />;
+}
+
+function ClientSearchPage({ initialQuery }: { initialQuery: string }) {
   const [searchQuery, setSearchQuery] = useState(initialQuery);
   const [results, setResults] = useState<any[]>([]);
   const [searching, setSearching] = useState(false);
+  const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Autofocus input on mount
+  // Focus on input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Perform search when query changes
+  // Fetch and search scriptures when query changes
   useEffect(() => {
-    let ignore = false;
     async function doSearch() {
       if (!searchQuery.trim()) {
         setResults([]);
@@ -78,23 +105,53 @@ export default function SearchPage() {
         return;
       }
       setSearching(true);
-      const data = await searchScriptures(searchQuery.trim());
-      if (!ignore) {
-        setResults(data);
-        setSearching(false);
+      // The following search is synchronous (Node.js) for server-side, but for client-side demo, fake async:
+      await new Promise(res => setTimeout(res, 50)); // simulate async
+      const query = searchQuery.trim().toLowerCase();
+      let newResults: any[] = [];
+      try {
+        const files = getScriptureFiles();
+        for (const file of files) {
+          let data;
+          try {
+            data = JSON.parse(fs.readFileSync(file, "utf8"));
+          } catch (e) {
+            continue;
+          }
+          const slug = data?.metadata?.slug;
+          const scriptureName = data?.metadata?.scripture_name;
+          const sections = data?.content?.sections || [];
+          for (const section of sections) {
+            const sectionNumber = section.number;
+            for (const [i, verse] of (section.verses || []).entries()) {
+              const found = searchInVerse(verse, query, slug, sectionNumber, i);
+              for (const match of found) {
+                newResults.push({
+                  ...match,
+                  scriptureName,
+                  slug,
+                  sectionTitle: section.title,
+                });
+              }
+            }
+          }
+        }
+      } catch (e) {
+        // ignore
       }
+      setResults(newResults);
+      setSearching(false);
     }
     doSearch();
-    return () => {
-      ignore = true;
-    };
   }, [searchQuery]);
 
-  // Update search query and URL on submit
+  // On submit, update URL query param
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = searchQuery.trim();
-    router.push(`/search${trimmed ? `?q=${encodeURIComponent(trimmed)}` : ""}`);
+    if (trimmed) {
+      router.push(`/search?q=${encodeURIComponent(trimmed)}`);
+    }
   };
 
   return (
