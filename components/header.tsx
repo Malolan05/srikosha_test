@@ -19,11 +19,17 @@ export default function Header() {
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault()
-    const trimmed = searchQuery.trim()
-    if (trimmed) {
-      router.push(`/search?q=${encodeURIComponent(trimmed)}`)
+    if (searchQuery.trim()) {
+      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
       setSearchQuery("")
       setIsMenuOpen(false)
+    }
+  }
+
+  // New: On focus, go to /search if not already there
+  const handleSearchbarFocus = () => {
+    if (pathname !== "/search") {
+      router.push("/search")
     }
   }
 
@@ -43,7 +49,8 @@ export default function Header() {
               className="w-full pl-9 pr-4"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              // removed readOnly and onFocus for always-editable search
+              onFocus={handleSearchbarFocus}
+              readOnly={pathname !== "/search"}
             />
           </div>
         </form>
