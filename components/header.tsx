@@ -26,6 +26,13 @@ export default function Header() {
     }
   }
 
+  // New: On focus, go to /search if not already there
+  const handleSearchbarFocus = () => {
+    if (pathname !== "/search") {
+      router.push("/search")
+    }
+  }
+
   return (
     <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
       <div className="container flex h-16 items-center justify-between">
@@ -42,6 +49,8 @@ export default function Header() {
               className="w-full pl-9 pr-4"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onFocus={handleSearchbarFocus}
+              readOnly={pathname !== "/search"}
             />
           </div>
         </form>
@@ -91,4 +100,3 @@ export default function Header() {
     </header>
   )
 }
-
