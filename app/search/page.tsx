@@ -5,71 +5,39 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 
-// Fetch and search real scriptures
+// Dummy search function - replace with API call or static JSON import for production!
 async function searchScriptures(query: string) {
   if (!query) return [];
-  // Fetch all scriptures from your API
-  const resp = await fetch("/api/scriptures");
-  if (!resp.ok) return [];
-  const scriptures = await resp.json();
-
+  // Example: Replace this with a fetch to your API or load data from a static file.
+  // This example returns mock data.
+  const mockResults = [
+    {
+      scriptureName: "Bhagavad Gita",
+      sectionTitle: "Chapter 2",
+      verseNumber: 47,
+      slug: "bhagavad-gita",
+      type: "verse",
+      text: "karmaṇy-evādhikāras te mā phaleṣhu kadāchana",
+      author: null,
+    },
+    {
+      scriptureName: "Ramanuja Commentary",
+      sectionTitle: "Chapter 2",
+      verseNumber: 47,
+      slug: "bhagavad-gita",
+      type: "commentary",
+      text: "You have a right to perform your prescribed duties...",
+      author: "Ramanuja",
+    },
+  ];
+  // To simulate search, filter by query (case-insensitive)
   const q = query.toLowerCase();
-  const results = [];
-
-  for (const scripture of scriptures) {
-    const { metadata, content } = scripture;
-    const scriptureName = metadata?.scripture_name || "";
-    // Recursively search all sections and verses
-    function searchSections(sections, sectionTitle) {
-      for (const section of sections) {
-        const title = section.title || sectionTitle || "";
-        if (section.verses) {
-          section.verses.forEach((verse, idx) => {
-            // Search original text, IAST text, translation
-            const match =
-              (verse.original_text && verse.original_text.toLowerCase().includes(q)) ||
-              (verse.iast_text && verse.iast_text.toLowerCase().includes(q)) ||
-              (verse.english_translation && verse.english_translation.toLowerCase().includes(q));
-            if (match) {
-              results.push({
-                scriptureName,
-                sectionTitle: title,
-                verseNumber: idx + 1,
-                slug: metadata.slug,
-                type: "verse",
-                text: verse.english_translation || verse.original_text || verse.iast_text,
-                author: null,
-              });
-            }
-            // Search all commentaries
-            if (verse.commentaries) {
-              Object.entries(verse.commentaries).forEach(([author, text]) => {
-                if (text && text.toLowerCase().includes(q)) {
-                  results.push({
-                    scriptureName,
-                    sectionTitle: title,
-                    verseNumber: idx + 1,
-                    slug: metadata.slug,
-                    type: "commentary",
-                    text,
-                    author,
-                  });
-                }
-              });
-            }
-          });
-        }
-        // Nested sections
-        if (section.sections) {
-          searchSections(section.sections, title);
-        }
-      }
-    }
-    if (content?.sections) {
-      searchSections(content.sections, "");
-    }
-  }
-  return results;
+  return mockResults.filter(
+    res =>
+      res.text.toLowerCase().includes(q) ||
+      (res.author && res.author.toLowerCase().includes(q)) ||
+      (res.scriptureName && res.scriptureName.toLowerCase().includes(q))
+  );
 }
 
 function highlight(text: string, query: string) {
@@ -95,11 +63,12 @@ export default function SearchPage() {
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  // Autofocus input on mount
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
 
-  // Perform real search when query changes
+  // Perform search when query changes
   useEffect(() => {
     let ignore = false;
     async function doSearch() {
@@ -130,6 +99,7 @@ export default function SearchPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
+  // Update search query and URL on submit
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = searchQuery.trim();
