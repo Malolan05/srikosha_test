@@ -5,22 +5,62 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 
+interface ScriptureMetadata {
+  slug: string;
+  scripture_name: string;
+  category: string;
+  author: string;
+  language: string;
+  script: string;
+  total_verses: number;
+}
+
+interface Verse {
+  original_text: string;
+  iast_text: string;
+  english_translation: string;
+  commentaries: Record<string, string>;
+}
+
+interface Section {
+  title: string;
+  verses?: Verse[];
+  sections?: Section[];
+}
+
+interface Scripture {
+  metadata: ScriptureMetadata;
+  content: {
+    sections: Section[];
+  };
+}
+
+type SearchResult = {
+  scriptureName: string;
+  sectionTitle: string;
+  verseNumber: number;
+  slug: string;
+  type: "verse" | "commentary";
+  text: string;
+  author: string | null;
+};
+
 // Fetch and search real scriptures
-async function searchScriptures(query: string) {
+async function searchScriptures(query: string): Promise<SearchResult[]> {
   if (!query) return [];
   // Fetch all scriptures from your API
   const resp = await fetch("/api/scriptures");
   if (!resp.ok) return [];
-  const scriptures = await resp.json();
+  const scriptures: Scripture[] = await resp.json();
 
   const q = query.toLowerCase();
-  const results = [];
+  const results: SearchResult[] = [];
 
   for (const scripture of scriptures) {
     const { metadata, content } = scripture;
     const scriptureName = metadata?.scripture_name || "";
     // Recursively search all sections and verses
-    function searchSections(sections, sectionTitle) {
+    function searchSections(sections: Section[], sectionTitle: string) {
       for (const section of sections) {
         const title = section.title || sectionTitle || "";
         if (section.verses) {
@@ -91,7 +131,7 @@ export default function SearchPage() {
   const router = useRouter();
   const initialQuery = (searchParams.get("q") ?? "").trim();
   const [searchQuery, setSearchQuery] = useState(initialQuery);
-  const [results, setResults] = useState<any[]>([]);
+  const [results, setResults] = useState<SearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
